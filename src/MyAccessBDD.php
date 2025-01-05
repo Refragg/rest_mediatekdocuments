@@ -46,8 +46,6 @@ class MyAccessBDD extends AccessBDD {
             case "etat" :
                 // select portant sur une table contenant juste id et libelle
                 return $this->selectTableSimple($table);
-            case "exemplaire" :
-                return $this->selectExemplairesRevue($champs['id']);
             case "" :
                 // return $this->uneFonction(parametres);
             default:
@@ -126,7 +124,7 @@ class MyAccessBDD extends AccessBDD {
                 $requete .= "$key=:$key and ";
             }
             // (enlève le dernier and)
-            $requete = substr($requete, 0, strlen($requete)-5);	 
+            $requete = substr($requete, 0, strlen($requete)-5);	          
             return $this->conn->queryBDD($requete, $champs);
         }
     }	
@@ -261,7 +259,7 @@ class MyAccessBDD extends AccessBDD {
 
     /**
      * récupère tous les exemplaires d'une revue
-     * @param array\null $champs 
+     * @param array|null $champs 
      * @return array|null
      */
     private function selectExemplairesRevue(?array $champs) : ?array{
@@ -275,7 +273,7 @@ class MyAccessBDD extends AccessBDD {
         $requete = "Select e.id, e.numero, e.dateAchat, e.photo, e.idEtat ";
         $requete .= "from exemplaire e join document d on e.id=d.id ";
         $requete .= "where e.id = :id ";
-        $requete .= "order by e.dateAchat DESC";		
+        $requete .= "order by e.dateAchat DESC";
         return $this->conn->queryBDD($requete, $champNecessaire);
     }		    
     
