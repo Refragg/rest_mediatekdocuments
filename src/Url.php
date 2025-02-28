@@ -64,7 +64,7 @@ class Url {
      * @return string
      */
     public function recupMethodeHTTP() : string{
-        return filter_input(INPUT_SERVER, 'REQUEST_METHOD');
+        return $_SERVER['REQUEST_METHOD'] ?? 'GET';
     }  
   
     /**
