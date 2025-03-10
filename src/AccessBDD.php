@@ -60,8 +60,8 @@ abstract class AccessBDD {
     }
 
     abstract protected function traitementSelect(string $table, ?array $champs) : ?array;
-    abstract protected function traitementInsert(string $table, ?array $champs) : ?int;
-    abstract protected function traitementUpdate(string $table, ?string $id, ?array $champs) : ?int;
+    abstract protected function traitementInsert(string $table, ?array $champs) : int|array|null;
+    abstract protected function traitementUpdate(string $table, ?string $id, ?array $champs) : int|array|null;
     abstract protected function traitementDelete(string $table, ?array $champs) : ?int;
 
 }
