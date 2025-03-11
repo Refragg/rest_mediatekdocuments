@@ -71,6 +71,8 @@ class MyAccessBDD extends AccessBDD {
                 return $this->insertDvd($champs);
             case "revue":
                 return $this->insertRevue($champs);
+            case "commandedocument":
+                return $this->insertCommandeDocument($champs);
             default:
                 // cas général
                 return $this->insertOneTupleOneTable($table, $champs);
@@ -93,6 +95,8 @@ class MyAccessBDD extends AccessBDD {
                 return $this->updateDvd($champs);
             case "revue" :
                 return $this->updateRevue($champs);
+            case "commandedocument" :
+                return $this->updateCommandeDocument($champs);
             default:
                 // cas général
                 return $this->updateOneTupleOneTable($table, $id, $champs);
@@ -563,6 +567,112 @@ class MyAccessBDD extends AccessBDD {
     }
 
     /**
+     * Insertion d'une nouvelle commande dans la base de données
+     * @param $id
+     * @param $dateCommande
+     * @param $montant
+     * @return int|null Le retour direct de l'appel à la méthode Connexion->updateBDD
+     */
+    private function insertCommande($id, $dateCommande, $montant): ?int {
+        $requete = "insert into commande values(:id, :dateCommande, :montant);";
+        return $this->conn->updateBDD($requete, [
+            'id' => $id,
+            'dateCommande' => $dateCommande,
+            'montant' => $montant
+        ]);
+    }
+
+    /**
+     * Mise à jour d'une nouvelle commande dans la base de données
+     * @param $id
+     * @param $dateCommande
+     * @param $montant
+     * @return int|null Le retour direct de l'appel à la méthode Connexion->updateBDD
+     */
+    private function updateCommande($id, $dateCommande, $montant): ?int {
+        $requete = "update commande ";
+        $requete .= "set dateCommande = :dateCommande, montant = :montant ";
+        $requete .= "where id = :id;";
+        return $this->conn->updateBDD($requete, [
+            'id' => $id,
+            'dateCommande' => $dateCommande,
+            'montant' => $montant
+        ]);
+    }
+
+    /**
+     * Insertion d'une nouvelle commande d'un document dans la base de données
+     * @param array|null $champs Les champs de la requête contenant tous les champs nécessaires à la création d'une commande d'un document
+     * @return array[]|null Les champs passés en paramètres en cas d'insertion réussie ou null en cas d'erreur
+     */
+    private function insertCommandeDocument(?array $champs): array|null {
+        if (empty($champs)){
+            return null;
+        }
+
+        if (!$this->conn->beginTransaction()) {
+            return null;
+        }
+
+        if (!$this->insertCommande($champs['Id'], $champs['DateCommande'], $champs['Montant'])) {
+            $this->conn->rollback();
+            return null;
+        }
+
+        $requete = 'insert into commandedocument values(:id, :nbExemplaire, :idLivreDvd, :idSuivi);';
+        if(!$this->conn->updateBDD($requete, [
+            'id' => $champs['Id'],
+            'nbExemplaire' => $champs['NbExemplaire'],
+            'idLivreDvd' => $champs['IdLivreDvd'],
+            'idSuivi' => $champs['IdSuivi'],
+        ])) {
+            $this->conn->rollback();
+            return null;
+        }
+
+        $this->conn->commit();
+        return [$champs];
+    }
+
+    /**
+     * Mise à jour d'une commande d'un document existante dans la base de données
+     * @param array|null $champs Les champs de la requête contenant tous les nouveaux champs nécessaires à la mise à jour d'une commande d'un document
+     * @return array[]|null Les champs passés en paramètres en cas de mise à jour réussie ou null en cas d'erreur
+     */
+    private function updateCommandeDocument(?array $champs): array|null {
+        if (empty($champs)){
+            return null;
+        }
+
+        if (!$this->conn->beginTransaction()) {
+            return null;
+        }
+
+        $resultatUpdate = $this->updateCommande($champs['Id'], $champs['DateCommande'], $champs['Montant']);
+        if (!isset($resultatUpdate)) {
+            $this->conn->rollback();
+            return null;
+        }
+
+        $requete = 'update commandedocument ';
+        $requete .= 'set nbExemplaire = :nbExemplaire, idLivreDvd = :idLivreDvd, idSuivi = :idSuivi ';
+        $requete .= 'where id = :id;';
+        $resultatUpdate = $this->conn->updateBDD($requete, [
+            'id' => $champs['Id'],
+            'nbExemplaire' => $champs['NbExemplaire'],
+            'idLivreDvd' => $champs['IdLivreDvd'],
+            'idSuivi' => $champs['IdSuivi'],
+        ]);
+        if (!isset($resultatUpdate)) {
+            $this->conn->rollback();
+            return null;
+        }
+
+        $this->conn->commit();
+        return [$champs];
+    }
+
+    /**
      * demande de modification (update) d'un tuple dans une table
      * @param string $table
      * @param string\null $id
@@ -696,8 +806,10 @@ class MyAccessBDD extends AccessBDD {
             return null;
         }
         $champNecessaire['id'] = $champs['id'];
-        $requete = "Select * ";
+        $requete = "Select commandedocument.id, dateCommande, montant, nbExemplaire, idLivreDvd, idSuivi, stade ";
         $requete .= "from commandedocument ";
+        $requete .= "join commande using(id) ";
+        $requete .= "join suivi on commandedocument.idSuivi = suivi.id ";
         $requete .= "where idLivreDvd = :id ";
         $requete .= "order by id ASC;";
         return $this->conn->queryBDD($requete, $champNecessaire);
