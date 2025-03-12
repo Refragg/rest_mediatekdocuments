@@ -38,10 +38,14 @@ class MyAccessBDD extends AccessBDD {
                 return $this->selectAllDvd();
             case "revue" :
                 return $this->selectAllRevues();
+            case "revue_abonnement_expiration" :
+                return $this->selectRevuesAbonnementAExpirationProchaine($champs);
             case "exemplaire" :
                 return $this->selectExemplairesDocument($champs);
             case "commandedocument" :
                 return $this->selectCommandesDocument($champs);
+            case "abonnement" :
+                return $this->selectAbonnements($champs);
             case "genre" :
             case "public" :
             case "rayon" :
@@ -73,6 +77,8 @@ class MyAccessBDD extends AccessBDD {
                 return $this->insertRevue($champs);
             case "commandedocument":
                 return $this->insertCommandeDocument($champs);
+            case "abonnement":
+                return $this->insertAbonnement($champs);
             default:
                 // cas général
                 return $this->insertOneTupleOneTable($table, $champs);
@@ -97,6 +103,8 @@ class MyAccessBDD extends AccessBDD {
                 return $this->updateRevue($champs);
             case "commandedocument" :
                 return $this->updateCommandeDocument($champs);
+            case "abonnement" :
+                return $this->updateAbonnement($champs);
             default:
                 // cas général
                 return $this->updateOneTupleOneTable($table, $id, $champs);
@@ -673,6 +681,76 @@ class MyAccessBDD extends AccessBDD {
     }
 
     /**
+     * Insertion d'un nouvel abonnement d'une revue dans la base de données
+     * @param array|null $champs Les champs de la requête contenant tous les champs nécessaires à la création d'un abonnement d'une revue
+     * @return array[]|null Les champs passés en paramètres en cas d'insertion réussie ou null en cas d'erreur
+     */
+    private function insertAbonnement(?array $champs): array|null {
+        if (empty($champs)){
+            return null;
+        }
+
+        if (!$this->conn->beginTransaction()) {
+            return null;
+        }
+
+        if (!$this->insertCommande($champs['Id'], $champs['DateCommande'], $champs['Montant'])) {
+            $this->conn->rollback();
+            return null;
+        }
+
+        $requete = 'insert into abonnement values(:id, :dateFinAbonnement, :idRevue);';
+        if(!$this->conn->updateBDD($requete, [
+            'id' => $champs['Id'],
+            'dateFinAbonnement' => $champs['DateFinAbonnement'],
+            'idRevue' => $champs['IdRevue']
+        ])) {
+            $this->conn->rollback();
+            return null;
+        }
+
+        $this->conn->commit();
+        return [$champs];
+    }
+
+    /**
+     * Mise à jour d'un abonnement d'une revue existant dans la base de données
+     * @param array|null $champs Les champs de la requête contenant tous les nouveaux champs nécessaires à la mise à jour d'un abonnement d'une revue
+     * @return array[]|null Les champs passés en paramètres en cas de mise à jour réussie ou null en cas d'erreur
+     */
+    private function updateAbonnement(?array $champs): array|null {
+        if (empty($champs)){
+            return null;
+        }
+
+        if (!$this->conn->beginTransaction()) {
+            return null;
+        }
+
+        $resultatUpdate = $this->updateCommande($champs['Id'], $champs['DateCommande'], $champs['Montant']);
+        if (!isset($resultatUpdate)) {
+            $this->conn->rollback();
+            return null;
+        }
+
+        $requete = 'update abonnement ';
+        $requete .= 'set dateFinAbonnement = :dateFinAbonnement, idRevue = :idRevue ';
+        $requete .= 'where id = :id;';
+        $resultatUpdate = $this->conn->updateBDD($requete, [
+            'id' => $champs['Id'],
+            'dateFinAbonnement' => $champs['DateFinAbonnement'],
+            'idRevue' => $champs['IdRevue']
+        ]);
+        if (!isset($resultatUpdate)) {
+            $this->conn->rollback();
+            return null;
+        }
+
+        $this->conn->commit();
+        return [$champs];
+    }
+
+    /**
      * demande de modification (update) d'un tuple dans une table
      * @param string $table
      * @param string\null $id
@@ -774,6 +852,19 @@ class MyAccessBDD extends AccessBDD {
     }
 
     /**
+     * Récupère les revues dont leur abonnement arrive a expiration dans moins de 30 jours
+     * @return array|null
+     */
+    private function selectRevuesAbonnementAExpirationProchaine() : ?array{
+        $requete = "SELECT DISTINCT idRevue, titre, dateFinAbonnement ";
+        $requete .= "FROM abonnement ";
+        $requete .= "JOIN document ON abonnement.idRevue = document.id ";
+        $requete .= "WHERE dateFinAbonnement BETWEEN DATE(NOW()) AND DATE_ADD(NOW(), INTERVAL 30 DAY) ";
+        $requete .= "ORDER BY dateFinAbonnement ASC;";
+        return $this->conn->queryBDD($requete);
+    }
+
+    /**
      * récupère tous les exemplaires d'un document
      * @param array|null $champs
      * @return array|null
@@ -811,6 +902,27 @@ class MyAccessBDD extends AccessBDD {
         $requete .= "join commande using(id) ";
         $requete .= "join suivi on commandedocument.idSuivi = suivi.id ";
         $requete .= "where idLivreDvd = :id ";
+        $requete .= "order by dateCommande DESC;";
+        return $this->conn->queryBDD($requete, $champNecessaire);
+    }
+
+    /**
+     * Retourne tous les abonnements pour une revue
+     * @param array|null $champs Les champs contenant un champ 'id' avec l'identifiant du document
+     * @return array|null La liste des abonnements de la revue ou null en cas d'erreur
+     */
+    private function selectAbonnements(?array $champs) : ?array{
+        if(empty($champs)){
+            return null;
+        }
+        if(!array_key_exists('id', $champs)){
+            return null;
+        }
+        $champNecessaire['id'] = $champs['id'];
+        $requete = "Select abonnement.id, dateCommande, montant, dateFinAbonnement, idRevue ";
+        $requete .= "from abonnement ";
+        $requete .= "join commande using(id) ";
+        $requete .= "where idRevue = :id ";
         $requete .= "order by dateCommande DESC;";
         return $this->conn->queryBDD($requete, $champNecessaire);
     }
