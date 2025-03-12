@@ -811,7 +811,7 @@ class MyAccessBDD extends AccessBDD {
         $requete .= "join commande using(id) ";
         $requete .= "join suivi on commandedocument.idSuivi = suivi.id ";
         $requete .= "where idLivreDvd = :id ";
-        $requete .= "order by id ASC;";
+        $requete .= "order by dateCommande DESC;";
         return $this->conn->queryBDD($requete, $champNecessaire);
     }
 }
