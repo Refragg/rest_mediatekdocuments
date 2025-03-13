@@ -105,6 +105,8 @@ class MyAccessBDD extends AccessBDD {
                 return $this->updateCommandeDocument($champs);
             case "abonnement" :
                 return $this->updateAbonnement($champs);
+            case "exemplaire" :
+                return $this->updateExemplaire($champs);
             default:
                 // cas général
                 return $this->updateOneTupleOneTable($table, $id, $champs);
@@ -751,6 +753,34 @@ class MyAccessBDD extends AccessBDD {
     }
 
     /**
+     * Mise à jour d'un exemplaire d'un document existant dans la base de données
+     * @param array|null $champs Les champs de la requête contenant tous les nouveaux champs nécessaires à la mise à jour d'un exemplaire d'un document
+     * @return array[]|null Les champs passés en paramètres en cas de mise à jour réussie ou null en cas d'erreur
+     */
+    private function updateExemplaire(?array $champs): array|null {
+        if (empty($champs)){
+            return null;
+        }
+
+        $requete = 'update exemplaire ';
+        $requete .= 'set photo = :photo, dateAchat = :dateAchat, idEtat = :idEtat ';
+        $requete .= 'where id = :id AND numero = :numero;';
+        $resultatUpdate = $this->conn->updateBDD($requete, [
+            'id' => $champs['Id'],
+            'numero' => $champs['Numero'],
+            'photo' => $champs['Photo'],
+            'dateAchat' => $champs['DateAchat'],
+            'idEtat' => $champs['IdEtat']
+        ]);
+
+        if (!isset($resultatUpdate)){
+            return null;
+        }
+
+        return [$champs];
+    }
+
+    /**
      * demande de modification (update) d'un tuple dans une table
      * @param string $table
      * @param string\null $id
@@ -877,8 +907,8 @@ class MyAccessBDD extends AccessBDD {
             return null;
         }
         $champNecessaire['id'] = $champs['id'];
-        $requete = "Select e.id, e.numero, e.dateAchat, e.photo, e.idEtat ";
-        $requete .= "from exemplaire e join document d on e.id=d.id ";
+        $requete = "Select e.id, e.numero, e.dateAchat, e.photo, e.idEtat, et.libelle etat ";
+        $requete .= "from exemplaire e join document d on e.id=d.id join etat et on e.idEtat=et.id ";
         $requete .= "where e.id = :id ";
         $requete .= "order by e.dateAchat DESC";
         return $this->conn->queryBDD($requete, $champNecessaire);
