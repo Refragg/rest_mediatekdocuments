@@ -107,6 +107,8 @@ class MyAccessBDD extends AccessBDD {
                 return $this->updateAbonnement($champs);
             case "exemplaire" :
                 return $this->updateExemplaire($champs);
+            case "authentification":
+                return $this->controleAuthentification($champs);
             default:
                 // cas général
                 return $this->updateOneTupleOneTable($table, $id, $champs);
@@ -778,6 +780,26 @@ class MyAccessBDD extends AccessBDD {
         }
 
         return [$champs];
+    }
+
+    /**
+     * Contrôle qu'une authentification est valide et retourne l'utilisateur concerné
+     * @param array|null $champs Les champs de la requête contenant les champs 'Login' et 'Password'
+     * @return array[]|null L'utilisateur authentifié en cas d'authentification correcte ou null en cas d'erreur
+     */
+    private function controleAuthentification(?array $champs): array|null {
+        if (empty($champs)){
+            return null;
+        }
+
+        $requete = "SELECT utilisateur.id, login, administrateur, service.libelle 'service' ";
+        $requete .= 'FROM utilisateur ';
+        $requete .= 'LEFT JOIN service ON utilisateur.idService = service.id ';
+        $requete .= 'WHERE login = :login AND hashPassword = SHA2(:password, 256);';
+        return $this->conn->queryBDD($requete, [
+            'login' => $champs['Login'],
+            'password' => $champs['Password']
+        ]);
     }
 
     /**
