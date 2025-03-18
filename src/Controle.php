@@ -39,6 +39,10 @@ class Controle{
         $this->controleResult($result);
     }
 
+    public function reponseNotFound() {
+        $this->reponse(404, "ce point d'entrée de l'API n'existe pas");
+    }
+
     /**
      * réponse renvoyée (affichée) au client au format json
      * @param int $code code standard HTTP (200, 500, ...)
