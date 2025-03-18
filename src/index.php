@@ -14,6 +14,11 @@ $url = Url::getInstance();
 // crée l'objet d'accès au contrôleur
 $controle = new Controle();
 
+if (isset($_REQUEST['notfound']) && $_REQUEST['notfound'] == 1) {
+    $controle->reponseNotFound();
+    return;
+}
+
 // vérifie l'authentification
 if (!$url->authentification()){
     // l'authentification a échoué
