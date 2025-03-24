@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Hôte : 127.0.0.1:3306
--- Généré le : mar. 11 mars 2025 à 15:30
+-- Généré le : dim. 23 mars 2025 à 18:10
 -- Version du serveur : 11.2.2-MariaDB
 -- Version de PHP : 8.2.13
 
@@ -36,6 +36,26 @@ CREATE TABLE IF NOT EXISTS `abonnement` (
   KEY `idRevue` (`idRevue`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Déchargement des données de la table `abonnement`
+--
+
+INSERT INTO `abonnement` (`id`, `dateFinAbonnement`, `idRevue`) VALUES
+('00051', '2025-03-20', '10001'),
+('00055', '2025-03-22', '10002'),
+('00056', '2025-03-28', '10003'),
+('00057', '2025-04-14', '10011');
+
+--
+-- Déclencheurs `abonnement`
+--
+DROP TRIGGER IF EXISTS `delete_commande_revue`;
+DELIMITER $$
+CREATE TRIGGER `delete_commande_revue` AFTER DELETE ON `abonnement` FOR EACH ROW DELETE FROM commande
+WHERE id = OLD.id
+$$
+DELIMITER ;
+
 -- --------------------------------------------------------
 
 --
@@ -62,7 +82,12 @@ INSERT INTO `commande` (`id`, `dateCommande`, `montant`) VALUES
 ('00005', '2025-03-05', 49.99),
 ('00006', '2025-03-06', 39.99),
 ('00011', '2025-03-11', 100.5),
-('00020', '2025-03-11', 10.7);
+('00015', '2025-03-12', 10.4),
+('00020', '2025-03-11', 10.7),
+('00051', '2025-03-12', 50.99),
+('00055', '2025-03-12', 1),
+('00056', '2025-03-12', 2),
+('00057', '2025-03-12', 3);
 
 -- --------------------------------------------------------
 
@@ -93,6 +118,7 @@ INSERT INTO `commandedocument` (`id`, `nbExemplaire`, `idLivreDvd`, `idSuivi`) V
 ('00005', 4, '00010', '00001'),
 ('00006', 4, '00011', '00001'),
 ('00011', 6, '00020', '00003'),
+('00015', 3, '00010', '00001'),
 ('00020', 3, '20001', '00004');
 
 --
@@ -239,7 +265,7 @@ CREATE TABLE IF NOT EXISTS `dvd` (
 --
 
 INSERT INTO `dvd` (`id`, `synopsis`, `realisateur`, `duree`) VALUES
-('20001', 'Luc est entraîné par Yoda pendant que Han et Leia tentent de se cacher dans la cité des nuages.', 'George Lucas', 124),
+('20001', 'Luc est entraîné par Yoda pendant que Han et Leia tentent de se cacher dans la cité des nuages.', 'George Lucas', 125),
 ('20002', 'L\'anneau unique, forgé par Sauron, est porté par Fraudon qui l\'amène à Foncombe. De là, des représentants de peuples différents vont s\'unir pour aider Fraudon à amener l\'anneau à la montagne du Destin.', 'Peter Jackson', 228),
 ('20003', 'Un milliardaire et des généticiens créent des dinosaures à partir de clonage.', 'Steven Spielberg', 128),
 ('20004', 'Un informaticien réalise que le monde dans lequel il vit est une simulation gérée par des machines.', 'Les Wachowski', 136);
@@ -296,14 +322,15 @@ INSERT INTO `exemplaire` (`id`, `numero`, `dateAchat`, `photo`, `idEtat`) VALUES
 ('00010', 4, '2025-03-03', '', '00001'),
 ('00010', 5, '2025-03-03', '', '00001'),
 ('00010', 6, '2025-03-03', '', '00001'),
-('00010', 7, '2025-03-04', '', '00001'),
-('00020', 1, '2025-03-11', '', '00001'),
+('00010', 7, '2025-03-04', '', '00003'),
+('00020', 1, '2025-03-11', '', '00002'),
 ('00020', 2, '2025-03-11', '', '00001'),
 ('00020', 3, '2025-03-11', '', '00001'),
 ('00020', 4, '2025-03-11', '', '00001'),
 ('00020', 5, '2025-03-11', '', '00001'),
 ('00020', 6, '2025-03-11', '', '00001'),
-('10002', 418, '2021-12-01', '', '00001'),
+('10001', 1, '2025-03-14', '', '00002'),
+('10001', 2, '2025-03-18', '', '00002'),
 ('10007', 3237, '2021-11-23', '', '00001'),
 ('10007', 3238, '2021-11-30', '', '00001'),
 ('10007', 3239, '2021-12-07', '', '00001'),
@@ -317,13 +344,7 @@ INSERT INTO `exemplaire` (`id`, `numero`, `dateAchat`, `photo`, `idEtat`) VALUES
 ('10011', 511, '2021-09-01', '', '00001'),
 ('10011', 512, '2021-10-06', '', '00001'),
 ('10011', 513, '2021-11-01', '', '00001'),
-('10011', 514, '2021-12-01', '', '00001'),
-('20001', 1, '2025-03-01', '', '00001'),
-('20001', 2, '2025-03-01', '', '00001'),
-('20001', 3, '2025-03-01', '', '00001'),
-('20001', 4, '2025-03-11', '', '00001'),
-('20001', 5, '2025-03-11', '', '00001'),
-('20001', 6, '2025-03-11', '', '00001');
+('10011', 514, '2021-12-01', '', '00001');
 
 -- --------------------------------------------------------
 
@@ -549,6 +570,28 @@ INSERT INTO `revue` (`id`, `periodicite`, `delaiMiseADispo`) VALUES
 -- --------------------------------------------------------
 
 --
+-- Structure de la table `service`
+--
+
+DROP TABLE IF EXISTS `service`;
+CREATE TABLE IF NOT EXISTS `service` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `libelle` varchar(50) NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=MyISAM AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Déchargement des données de la table `service`
+--
+
+INSERT INTO `service` (`id`, `libelle`) VALUES
+(1, 'Administratif'),
+(2, 'Prets'),
+(3, 'Culture');
+
+-- --------------------------------------------------------
+
+--
 -- Structure de la table `suivi`
 --
 
@@ -568,6 +611,33 @@ INSERT INTO `suivi` (`id`, `stade`) VALUES
 ('00002', 'Relancée'),
 ('00003', 'Livrée'),
 ('00004', 'Réglée');
+
+-- --------------------------------------------------------
+
+--
+-- Structure de la table `utilisateur`
+--
+
+DROP TABLE IF EXISTS `utilisateur`;
+CREATE TABLE IF NOT EXISTS `utilisateur` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `login` varchar(100) NOT NULL,
+  `hashPassword` char(64) NOT NULL,
+  `administrateur` tinyint(1) NOT NULL,
+  `idService` int(11) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idService` (`idService`)
+) ENGINE=MyISAM AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Déchargement des données de la table `utilisateur`
+--
+
+INSERT INTO `utilisateur` (`id`, `login`, `hashPassword`, `administrateur`, `idService`) VALUES
+(1, 'admin', '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918', 1, NULL),
+(2, 'jfrancart', '2c48d6e46b37c3716a1038bb1886fab5af073c272b35096c9c51f20dde546701', 0, 1),
+(3, 'adumont', 'c16ec5bfc9711f7acf7970109de76278c4492802bf2e4471b0ccce9173f6c7c1', 0, 2),
+(4, 'pmenier', '7bfddc6ea2b214b6ae9310627a6ecf38dcc79164ae1b9be5601cfd300121b8ca', 0, 3);
 
 --
 -- Contraintes pour les tables déchargées
